@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pie-chart-canvas</title>
+    <style>
+        :root {
+            --black: #222;
+            --white: #fff;
+            --input-focus-color: rgba(225, 225, 225, .5);
+        }
+
+        .dark {
+            --black: #fff;
+            --white: #222;
+            --input-focus-color: rgba(100, 100, 100, .5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Poppins, sans-serif;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 1rem;
+            background: var(--white);
+        }
+
+
+        .app-title {
+            font-size: clamp(50px, 10vw, 80px);
+            font-weight: 600;
+            color: var(--white);
+            background: var(--black);
+            text-align: center;
+            padding: 0 8px 0 8px;
+            border-radius: 8px;
+        }
+
+        .toggler {
+            position: relative;
+            width: 100px;
+            height: 40px;
+            border-radius: 50px;
+            background: var(--black);
+            z-index: 9999;
+        }
+
+        .ball {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 4px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--white);
+            cursor: pointer;
+            transition: transform .3s ease;
+        }
+
+        .toggler.on .ball {
+            left: unset;
+            transform: translateY(-50%) translateX(66px);
+        }
+
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--white);
+            color: var(--black);
+        }
+
+        .left,
+        .right {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 50%;
+            height: 100%;
+            padding: 1rem;
+            background: var(--white);
+        }
+
+        .left {
+            justify-content: flex-start;
+        }
+
+        .custom-input {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 5px;
+            margin-bottom: 1.6rem;
+            background: var(--white);
+        }
+
+        .custom-input input {
+            height: 35px;
+            width: 100%;
+            padding: 0 .6rem;
+            font-family: Poppins, sans-serif;
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, .2);
+            color: var(--black);
+            margin-top: .5rem;
+            background: transparent;
+            z-index: 9999;
+            transition: border-color .2s ease;
+        }
+
+        .custom-input input:hover {
+            border-color: rgba(0, 0, 0, .5);
+        }
+
+        .custom-input input:focus {
+            background: var(--input-focus-color);
+        }
+
+        .custom-input label {
+            position: absolute;
+            bottom: 10px;
+            left: 1rem;
+            color: var(--black);
+            font-size: clamp(.6rem, 1.5vw, 1.2rem);
+            font-weight: 300;
+            cursor: text;
+            opacity: 50%;
+            transition: opacity .3s ease;
+            z-index: 0;
+        }
+
+        .custom-input .title {
+            font-weight: 700;
+            font-size: clamp(.8rem, 2.5vw, 1.2rem);
+            margin-left: .2rem;
+            letter-spacing: .5px;
+            color: var(--black);
+        }
+
+        .custom-input:nth-last-child(1) {
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 1rem;
+        }
+
+        .type-of-value,
+        .chart-type {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .custom-input select {
+            font-family: Poppins, sans-serif;
+            border: 1px solid var(--black);
+            border-radius: 4px;
+            margin-top: .5rem;
+            color: var(--black);
+            background-color: var(--white);
+        }
+
+        .custom-input input:active,
+        .custom-input input:focus,
+        .custom-input select:focus,
+        .custom-input select:active {
+            outline: 0;
+        }
+
+        .custom-input.active label {
+            opacity: 0;
+        }
+
+
+        .right {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70%;
+            background: var(--white);
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            top: -10vh;
+            margin: auto;
+            border-radius: 1rem;
+        }
+
+
+
+        @media screen and (max-width:850px) {
+            .custom-input:nth-last-child(1) {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="app-title">iPIE</div>
+        <div class="tooltips">
+            <div class="toggler">
+                <div class="ball"></div>
+            </div>
+        </div>
+    </div>
+    <div class="app">
+        <div class="left">
+            <div class="custom-input graph-title">
+                <div class="title">Graph Title</div>
+                <input type="text">
+                <label class="placeholder">Growth of an investment</label>
+            </div>
+            <div class="custom-input data-labels">
+                <div class="title">Data Labels</div>
+                <input type="text">
+                <label class="placeholder">Apple Google Microsoft Amazon Netflix Facebook</label>
+            </div>
+            <div class="custom-input data-values">
+                <div class="title">Data Values</div>
+                <input type="text">
+                <label class="placeholder">500 600 400 200 300 150</label>
+            </div>
+            <div class="custom-input">
+                <div class="type-of-value">
+                    <div class="title">Type of Value</div>
+                    <select>
+                        <option selected value="value">Value</option>
+                        <option value="percent">Percentage</option>
+                    </select>
+                </div>
+                <div class="chart-type">
+                    <div class="title">Chart Type</div>
+                    <select>
+                        <option value="chart">Chart</option>
+                        <option value="doughnut">Doughnut</option>
+                    </select>
+                </div>
+            </div>
+            <!-- 
+            <button class="btn get-chart-btn">Get chart</button> -->
+        </div>
+        <div class="right">
+            <canvas></canvas>
+        </div>
+    </div>
+    <script>
+        document.querySelectorAll("label").forEach(label => label.onclick = function () {
+            this.parentElement.classList.toggle("active")
+
+        })
+        document.querySelectorAll("input").forEach(input => input.onfocus = function () {
+            this.parentElement.classList.add("active")
+        })
+
+        document.querySelectorAll("input").forEach(input => input.onblur = function (e) {
+            if (this.value.length > 0) {
+
+            } else {
+                this.parentElement.classList.remove("active")
+            }
+        })
+
+        const toggle = {
+            state: false,
+            setState: function (newState) {
+                this.state = newState
+            }
+        }
+
+
+        class iPie {
+            constructor() {
+                this.$container = document.querySelector(".right")
+                this.$inputs = document.querySelectorAll(".custom-input input")
+                this.$typeOfValue = document.querySelector(".type-of-value select")
+                this.$chartType = document.querySelector(".chart-type select")
+                this.canvas = document.querySelector("canvas")
+                this.ctx = this.canvas.getContext("2d")
+                this.canvas.width = this.$container.getBoundingClientRect().width
+                this.canvas.height = this.$container.getBoundingClientRect().height
+                this.x = this.canvas.width / 2
+                this.y = this.canvas.height / 2
+                this.legendX = this.canvas.width - 100
+                this.legendY = 50
+                this.totalValue = 0
+                this.radius = Math.min(this.x, this.y) * .8
+                this.data = []
+                this.colors = ["#FF6384", "#FFCE56", "#36A2EB", "#4BC0C0", "crimson", "blueviolet"]
+                this.color = window.getComputedStyle(document.querySelector(".app")).backgroundColor
+                this.title = this.$inputs[0].value.split(" ")
+                this.dataLabels = this.$inputs[1].value.split(" ")
+                this.dataValues = this.$inputs[2].value.split(" ")
+                this.typeOfValue = this.$typeOfValue.value
+                this.chartType = this.$chartType.value
+                window.onresize = () => {
+                    this.canvas.width = this.$container.getBoundingClientRect().width
+                    this.canvas.height = this.$container.getBoundingClientRect().height
+                    this.renderChart(this.title, this.data, this.typeOfValue, this.chartType)
+                }
+                this.addEventListeners()
+                this.prepareData(this.dataLabels, this.dataValues)
+                this.getTotal(this.data)
+                this.getPercentages(this.data)
+                console.log(this.$inputs[1].value.length)
+                this.renderChart(this.title, this.data, this.typeOfValue, this.chartType)
+            }
+
+            addEventListeners() {
+                this.$inputs.forEach((input, idx, inputs) => {
+                    input.onchange = () => {
+                        this.title = inputs[0].value
+                        this.dataLabels = inputs[1].value.split(" ")
+                        this.dataValues = inputs[2].value.split(" ")
+                        this.prepareData(this.dataLabels, this.dataValues)
+                        this.getTotal(this.data)
+                        this.getPercentages(this.data)
+                        this.renderChart(this.title, this.data, this.typeOfValue, this.chartType)
+                    }
+                })
+
+                this.$typeOfValue.onchange = () => {
+                    this.typeOfValue = this.$typeOfValue.value
+                    this.renderChart(this.title, this.data, this.typeOfValue, this.chartType)
+                }
+
+                this.$chartType.onchange = () => {
+                    this.chartType = this.$chartType.value
+                    this.renderChart(this.title, this.data, this.typeOfValue, this.chartType)
+                }
+
+            }
+
+
+            isDataCorrect() {
+                if (this.dataLabels.length == this.dataValues.length) return true
+                else return false
+            }
+            isNotEmptyData() {
+                if (this.dataLabels.length > 1 && this.dataValues.length > 1) return true
+                else return false
+            }
+
+            prepareData(labels, values) {
+                if (labels.length === values.length) {
+                    this.data = []
+                    for (let i = 0; i < labels.length; i++) {
+                        this.data.push({
+                            label: labels[i],
+                            value: +values[i],
+                            color: this.colors[Math.floor(Math.random() * this.colors.length) + 1]
+                        })
+                        // this.datass = [{ label: labels[i], value: values[i], color: this.colors[Math.floor(Math.random() * this.colors.length) + 1] }]
+                    }
+                } else {
+                    this.data = []
+                }
+                console.log(this.data)
+
+            }
+
+            getTotal(data) {
+                this.totalValue = 0
+                for (let i = 0; i < data.length; i++) {
+                    this.totalValue += data[i].value
+                }
+            }
+
+            getPercentages(data) {
+                console.log("total value is", this.totalValue)
+                if (this.totalValue > 0) {
+                    for (let i = 0; i < data.length; i++) {
+                        data[i].percent = Math.round((data[i].value / this.totalValue) * 100)
+                    }
+                } else {
+
+                }
+            }
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            }
+
+            resizeCanvas() {
+                this.canvas.width = this.$container.getBoundingClientRect().width
+                this.canvas.height = this.$container.getBoundingClientRect().height
+                this.x = this.canvas.width / 2
+                this.y = this.canvas.height / 2
+                this.radius = Math.min(this.x, this.y) * .6
+
+            }
+            renderChart(title, data, type_of_value, type_of_chart) {
+                this.clearCanvas()
+                if (this.isDataCorrect() && this.isNotEmptyData()) {
+                    this.resizeCanvas()
+                    this.ctx.fillStyle = window.getComputedStyle(document.querySelector(".app")).backgroundColor
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+                    this.ctx.fill()
+                    this.ctx.font = "20px Poppins"
+                    this.ctx.textAlign = "center"
+                    this.ctx.textBaseline = "middle"
+                    this.ctx.fillStyle = window.getComputedStyle(document.querySelector(".app")).color
+                    this.ctx.fillText(title, this.canvas.width / 2, 20)
+                    let startAngle = 0
+                    for (let i = 0; i < data.length; i++) {
+                        var sliceAngle = 2 * Math.PI * (data[i].percent / 100)
+                        this.ctx.fillStyle = data[i].color
+                        this.ctx.beginPath()
+                        this.ctx.moveTo(this.x, this.y)
+                        this.ctx.arc(this.x, this.y, this.radius, startAngle, startAngle + sliceAngle)
+                        this.ctx.closePath()
+                        this.ctx.fill()
+                        startAngle += sliceAngle
+                        this.ctx.fillStyle = window.getComputedStyle(document.querySelector(".app")).color
+                        this.ctx.font = "25px monospace"
+                        this.ctx.textAlign = "center"
+                        this.ctx.textBaseline = "middle"
+                        this.ctx.fillText(`${type_of_value === "value" ? data[i].value : type_of_value === "percent" ? data[i].percent + "%" : ""}`, this.x + this.radius / 1.35 * Math.cos(startAngle - sliceAngle / 2), this.y + this.radius / 1.35 * Math.sin(startAngle - sliceAngle / 2))
+                    }
+
+                    for (let i = 0; i < data.length; i++) {
+                        this.ctx.font = "12px monospace"
+                        this.ctx.textAlign = "left"
+                        this.ctx.textBaseline = "middle"
+                        this.ctx.fillStyle = data[i].color
+                        this.ctx.textAlign = "left"
+                        this.ctx.textBaseline = "middle"
+                        this.ctx.fillRect(this.x + this.radius + 35, this.y / 2 + i * 35, 20, 20)
+                        this.ctx.fillStyle = window.getComputedStyle(document.querySelector(".app")).color
+                        this.ctx.fillText(data[i].label, this.x + this.radius + 65, this.y / 1.8 + i * 35)
+                    }
+
+                }
+                else {
+
+                }
+            }
+
+        }
+
+        new iPie()
+
+
+        document.querySelector(".toggler .ball").onclick = function (e) {
+            toggle.setState(!toggle.state)
+            console.log(toggle.state)
+            this.parentElement.classList.toggle("on")
+            document.body.classList.toggle("dark")
+            new iPie()
+        }
+    </script>
+</body>
+
+</html>
